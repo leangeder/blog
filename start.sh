@@ -46,7 +46,7 @@ shared_dm_ve () {
         TMP_SHARED_PATH=$HOME
 		TMP_SHARED_MNT_PATH=$HOME
     fi                                                                          
-#    docker-machine stop $DM_NAME > /dev/null 2>&1                               
+    docker-machine stop $DM_NAME > /dev/null 2>&1
     VBoxManage sharedfolder remove $DM_NAME --name $TMP_SHARED_NAME > /dev/null 2>&1
 	if [ "X$DM_SHARED_PATH" != "X"  ]; then
 		TMP_SHARED_NAME="$(basename $DM_SHARED_PATH)"
