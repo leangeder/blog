@@ -1,7 +1,6 @@
 src:
   restart: always
   build: ./src
-  dockerfile: Dockerfile-dev
   expose:
     - "8000"
   links:
@@ -21,13 +20,13 @@ nginx:
   volumes_from:
     - src
   links:
-    - src:src
+      - src:src
 
 data:
   image: postgres:latest
   volumes:
     - /var/lib/postgresql
-  command: /bin/true
+  command: "true"
 
 postgres:
   restart: always
@@ -35,4 +34,4 @@ postgres:
   volumes_from:
     - data
   ports:
-    - "5432:5432"
+      - "5432:5432"

@@ -8,7 +8,8 @@ DM_VERSION="v0.7.0"
 DC_VERSION="1.6.2"
 DM_SHARED_PATH=$PWD
 DM_NAME="dev"
-DC_FILE=""
+DM_HOSTNAME="$(basename $DM_SHARED_PATH).local"
+#DC_FILE="$PWD/docker-compose.yml"
 
 get_dm_tools () {
 	mkdir -p $HOME_BIN_PATH
@@ -21,7 +22,8 @@ get_dm_tools () {
         sudo curl -L https://github.com/docker/compose/releases/download/${DC_VERSION}/docker-compose-`uname -s`-`uname -m` > $HOME_BIN_PATH/docker-compose
         sudo chmod +x $HOME_BIN_PATH/docker-compose
     fi
-	export PATH="$PATH:$HOME_BIN_PATH"
+	export PATH=$PATH:$(echo $HOME_BIN_PATH)
+
 }
 
 start_dm_ve () {
@@ -54,19 +56,30 @@ shared_dm_ve () {
 		TMP_SHARED_MNT_PATH=$DM_SHARED_PATH
 	fi
     VBoxManage sharedfolder add $DM_NAME --name $TMP_SHARED_NAME --hostpath $TMP_SHARED_PATH --automount > /dev/null 2>&1
+	VBoxManage setextradata $DM_NAME VBoxInternal2/SharedFoldersEnableSymlinksCreate/$TMP_SHARED_NAME 1
     docker-machine start $DM_NAME > /dev/null 2>&1
 	docker-machine ssh $DM_NAME mkdir -p $TMP_SHARED_MNT_PATH > /dev/null 2>&1
 	docker-machine ssh $DM_NAME sudo mount -t vboxsf -o defaults,uid=1000,gid=50 $TMP_SHARED_NAME $TMP_SHARED_MNT_PATH > /dev/null 2>&1
-	printf "%s\n%s\n" "Docker Machine $DM_NAME is ready to use" "The IP address is $(docker-machine ip ${DM_NAME})"
+	printf "%s\n" "Docker Machine $DM_NAME is ready to use"
 }
 
 start_dc () {
 
 	if [ "X$DC_FILE" != "X" ] && [ -f $DC_FILE  ]; then
-		eval $($HOME_BIN_PATH/docker-machine env)
-		$HOME_BIN_PATH/docker-compose up -f $DC_FILE -d
+		eval $($HOME_BIN_PATH/docker-machine env $DM_NAME )
+		docker-compose -f $DC_FILE up --force-recreate -d
 	fi
 }
+
+set_hosts() {
+    if [ ! -n "$(grep $DM_HOSTNAME /etc/hosts)" ]; then
+		sudo -- sh -c -e "echo '$(docker-machine ip ${DM_NAME})\t$DM_HOSTNAME' >> /etc/hosts";
+	fi
+	if [ -n "$(grep $DM_HOSTNAME /etc/hosts)" ]; then
+		printf "%s\n" "The IP address is $(docker-machine ip ${DM_NAME}) and also accessible with hostname $DM_HOSTNAME";
+       fi
+}
+
 #for args in "$@"
 #do
 #case $i in
@@ -90,3 +103,4 @@ get_dm_tools
 start_dm_ve
 shared_dm_ve
 start_dc
+set_hosts
