@@ -2,23 +2,44 @@ version: '2'
 services:
     src:
         image: busybox
-        stdin_open: true
-        tty: true
-        restart: always
         volumes:                                                                
-            - $PWD/src:$PWD/src
-            - $PWD/src
+            - $PWD/src:/opt/app
+            - /opt/app
     dev:
         image: python:3
-        working_dir: $PWD/src
-        expose:                                                                 
+        working_dir: /opt/app
+        volumes_from:
+            - src
+        command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt && sed -i "s/^#\!.*/#\!venv\/bin\/python/" venv/bin/*'
+
+    data:                                                                           
+        image: postgres:latest                                                        
+        volumes:                                                                      
+            - /var/lib/postgresql                                                       
+        command: "true"                                                               
+                                                                                
+    postgres:                                                                       
+        restart: always                                                               
+        image: postgres:latest                                                        
+        volumes_from:                                                                 
+            - data                                                                      
+        ports:                                                                        
+            - "5432:5432"
+
+    gunicorn:
+        #        build:
+            #            context: ./src/
+            #            dockerfile: Dockerfile_gunicorn
+        image: python:3
+        working_dir: /opt/app/
+        expose:
             - 5000
         env_file: .env
-        volumes_from:                                                                
+        links:
+            - postgres:db
+        volumes_from:
             - src
-        volumes:
-            - $PWD/src
-        command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r requirements.txt && venv/bin/gunicorn -w 2 -b :5000 app:app'
+        command: /bin/bash -c 'pip3 install gunicorn -r requirements.txt && gunicorn -w 2 -b :5000 app:app'
 
     nginx:
         image: tutum/nginx
@@ -26,6 +47,6 @@ services:
           - 80:80
           - 443:443
         links:
-            - dev:backend
+            - gunicorn:backend
         volumes:
           - ./nginx/sites-enabled/:/etc/nginx/sites-enabled/

@@ -9,7 +9,7 @@ DC_VERSION="1.6.2"
 DM_SHARED_PATH=$PWD
 DM_NAME="dev"
 DM_HOSTNAME="$(basename $DM_SHARED_PATH).local"
-#DC_FILE="$PWD/docker-compose.yml"
+DC_FILE="$PWD/docker-compose.yml"
 
 get_dm_tools () {
 	mkdir -p $HOME_BIN_PATH
