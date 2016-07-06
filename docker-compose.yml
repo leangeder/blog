@@ -6,7 +6,7 @@ services:
             - $PWD/src:/opt/app
             - /opt/app
     dev:
-        image: python:3
+        image: python
         working_dir: /opt/app
         volumes_from:
             - src
@@ -30,7 +30,8 @@ services:
         #        build:
             #            context: ./src/
             #            dockerfile: Dockerfile_gunicorn
-        image: python:3
+        image: python
+        restart: always
         working_dir: /opt/app/
         expose:
             - 5000
@@ -39,7 +40,7 @@ services:
             - postgres:db
         volumes_from:
             - src
-        command: /bin/bash -c 'pip3 install gunicorn -r requirements.txt && gunicorn -w 2 -b :5000 app:app'
+        command: /bin/bash -c 'pip install gunicorn -r requirements.txt && gunicorn -w 2 -b :5000 app:app'
 
     nginx:
         image: tutum/nginx

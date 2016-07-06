@@ -6,7 +6,11 @@ DC_PATH="$BIN_PATH/docker-compose"
 DM_VERSION="v0.7.0"
 DC_VERSION="1.6.2"
 HOST_FILE="/etc/hosts"
-DM_VE="virtualbox"                                                              
+DM_VE="virtualbox"
+DM_SHARED_PATH=$PWD
+DM_NAME="dev"
+DM_HOSTNAME="$(basename $DM_SHARED_PATH).$DM_NAME"
+DC_FILE="$PWD/docker-compose.yml"
 
 get_dm_tools () {
 	mkdir -p $BIN_PATH
@@ -140,7 +144,7 @@ while getopts ":e:n:s:c:dh" opt; do
 	    *)
 	    DM_SHARED_PATH=$PWD                                                             
 	    DM_NAME="dev"                                                                   
-	    DM_HOSTNAME="$(basename $DM_SHARED_PATH).local"                                 
+	    DM_HOSTNAME="$(basename $DM_SHARED_PATH).$DM_NAME"
 	    DC_FILE="$PWD/docker-compose.yml"                                               
 	            # unknown option
 	    ;;
