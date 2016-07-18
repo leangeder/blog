@@ -30,14 +30,25 @@ get_dm_tools () {
 }
 
 start_dm_ve () {
-	if [ "X$($DM_PATH inspect $DM_NAME 2>&1)" = "XHost does not exist: \"$DM_NAME\"" ]; then
-		printf "%s" "Docker Machine $DM_NAME did not exist. Creation of the docker machine..."
-		$DM_PATH create -d $DM_VE $DM_NAME > /dev/null 2>&1
-		printf "%s\n" "Done"
+	if [ "X$($DM_PATH inspect $DM_NAME 2>&1)" = "XHost does not exist: \"$DM_NAME\"" ] || [ "X$($DM_PATH status $DM_NAME 2>&1)" = "XStopped" ]; then
+		if [ "X$($DM_PATH inspect $DM_NAME 2>&1)" = "XHost does not exist: \"$DM_NAME\"" ]; then
+			set -x 
+			printf "%s" "Docker Machine $DM_NAME did not exist. Creation of the docker machine..."
+			$DM_PATH create -d $DM_VE $DM_NAME > /dev/null 2>&1
+			printf "%s\n" "Done"
+	
+		fi
+		if [ "X$($DM_PATH status $DM_NAME 2>&1)" = "XStopped" ]; then
+			printf "%s" "Docker Machine $DM_NAME will be start. Starting \"$DM_NAME\"..."
+			$DM_PATH start $DM_NAME > /dev/null 2>&1
+			printf "%s\n" "Done"
+		fi
+
 		shared_dm_ve
-		set_hosts
+	    set_hosts	
 	fi
-		start_dc
+
+	start_dc
 }
 
 shared_dm_ve () {
