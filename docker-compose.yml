@@ -2,28 +2,30 @@ version: '2'
 services:
     src:
         image: busybox
-        volumes:                                                                
+        volumes:
             - $PWD/src:/opt/app
             - /opt/app
     dev:
         image: python
         working_dir: /opt/app
+        environment:
+            - DEBUG=True
         volumes_from:
             - src
         command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt && sed -i "s/^#\!.*/#\!venv\/bin\/python/" venv/bin/*'
 
-    data:                                                                           
-        image: postgres:latest                                                        
-        volumes:                                                                      
-            - /var/lib/postgresql                                                       
-        command: "true"                                                               
-                                                                                
-    postgres:                                                                       
-        restart: always                                                               
-        image: postgres:latest                                                        
-        volumes_from:                                                                 
-            - data                                                                      
-        ports:                                                                        
+    data:
+        image: postgres:latest
+        volumes:
+            - /var/lib/postgresql
+        command: "true"
+
+    postgres:
+        restart: always
+        image: postgres:latest
+        volumes_from:
+            - data
+        ports:
             - "5432:5432"
 
     gunicorn:
@@ -36,6 +38,8 @@ services:
         expose:
             - 5000
         env_file: .env
+        environment:
+            - DEBUG=False
         links:
             - postgres:db
         volumes_from:
