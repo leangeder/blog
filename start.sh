@@ -34,7 +34,6 @@ get_dm_tools () {
 start_dm_ve () {
 	if [ "X$($DM_PATH inspect $DM_NAME 2>&1)" = "XHost does not exist: \"$DM_NAME\"" ] || [ "X$($DM_PATH status $DM_NAME 2>&1)" = "XStopped" ]; then
 		if [ "X$($DM_PATH inspect $DM_NAME 2>&1)" = "XHost does not exist: \"$DM_NAME\"" ]; then
-			set -x 
 			printf "%s" "Docker Machine $DM_NAME did not exist. Creation of the docker machine..."
 			$DM_PATH create -d $DM_VE $DM_NAME > /dev/null 2>&1
 			printf "%s\n" "Done"
