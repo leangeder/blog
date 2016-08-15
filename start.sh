@@ -11,24 +11,33 @@ DM_SHARED_PATH=$PWD
 DM_NAME="dev"
 DM_HOSTNAME="$(basename $DM_SHARED_PATH).$DM_NAME"
 DC_FILE="$PWD/docker-compose.yml"
+SUDO="sudo -- sh -c -e"
+
+if [ "X$OS" != "X" ]; then
+	DM_SHARED_PATH="$(cygpath -aw $(pwd))"
+	DC_FILE="$DM_SHARED_PATH\\docker-compose.yml"
+	VBOX_MANAGE="/cygdrive/c/Program\ Files/Oracle/VirtualBox/VBoxManage.exe"
+	HOST_FILE="/cygdrive/c/Windows/System32/drivers/etc/hosts"
+	SUDO="sh -c -e"
+fi
 
 get_dm_tools () {
 	mkdir -p $BIN_PATH
 	if [ "X$(which docker-machine)" = "X" ]; then
 		printf "%s" "Docker Machine is missing, it will be download and setting on $BIN_PATH..."
-		sudo -- sh -c -e "curl -L https://github.com/docker/machine/releases/download/${DM_VERSION}/docker-machine-`uname -s`-`uname -m` 2>/dev/null > $BIN_PATH/$DM_PATH";
-		sudo chmod +x $BIN_PATH/$DM_PATH
+		$SUDO "curl -L https://github.com/docker/machine/releases/download/${DM_VERSION}/docker-machine-`uname -s`-`uname -m` 2>/dev/null > $BIN_PATH/$DM_PATH";
+		$SUDO chmod +x $BIN_PATH/$DM_PATH
 		printf "%s\n" "Done"
 	fi
-	#DM_PATH="$(which docker-machine)"
+#	DM_PATH="$(which docker-machine)"
 
 	if [ "X$(which docker-compose)" = "X" ]; then
 		printf "%s" "Docker Compose is missing, it will be download and setting on $BIN_PATH..."
-	        sudo -- sh -c -e "curl -L https://github.com/docker/compose/releases/download/${DC_VERSION}/docker-compose-`uname -s`-`uname -m` 2>/dev/null > $BIN_PATH/$DC_PATH";
-        	sudo chmod +x $BIN_PATH/$DC_PATH
+	        $SUDO "curl -L https://github.com/docker/compose/releases/download/${DC_VERSION}/docker-compose-`uname -s`-`uname -m` 2>/dev/null > $BIN_PATH/$DC_PATH";
+        	$SUDO chmod +x $BIN_PATH/$DC_PATH
 		printf "%s\n" "Done"
     	fi
-	#DC_PATH="$(which docker-compose)"
+#	DC_PATH="$(which docker-compose)"
 }
 
 start_dm_ve () {
@@ -37,7 +46,7 @@ start_dm_ve () {
 			printf "%s" "Docker Machine $DM_NAME did not exist. Creation of the docker machine..."
 			$DM_PATH create -d $DM_VE $DM_NAME > /dev/null 2>&1
 			printf "%s\n" "Done"
-	
+
 		fi
 		if [ "X$($DM_PATH status $DM_NAME 2>&1)" = "XStopped" ]; then
 			printf "%s" "Docker Machine $DM_NAME will be start. Starting \"$DM_NAME\"..."
@@ -46,7 +55,7 @@ start_dm_ve () {
 		fi
 
 		shared_dm_ve
-		set_hosts	
+		set_hosts
 	fi
 
 	start_dc
@@ -58,22 +67,20 @@ shared_dm_ve () {
 	TMP_SHARED_MNT_PATH=$TMP_SHARED_PATH
 	VBOX_MANAGE=$(which VBoxManage 2> /dev/null)
 	if [ "X$OS" != "X" ]; then
-        	TMP_SHARED_NAME=""
-	        TMP_SHARED_PATH=""
-		TMP_SHARED_MNT_PATH=""
-		VBOX_MANAGE="C:\\Program\ Files\\Oracle\\VirtualBox\\VBoxManage"
-		HOST_FILE=""
-	fi                                                                          
+    TMP_SHARED_NAME="c/Users"
+	  TMP_SHARED_PATH="c:\Users"
+		TMP_SHARED_MNT_PATH="$HOME"
+	fi
 	$DM_PATH stop $DM_NAME > /dev/null 2>&1
-	$VBOX_MANAGE sharedfolder remove $DM_NAME --name $TMP_SHARED_NAME > /dev/null 2>&1
+	eval "$VBOX_MANAGE sharedfolder remove $DM_NAME --name $TMP_SHARED_NAME > /dev/null 2>&1"
 	if [ "X$DM_SHARED_PATH" != "X"  ]; then
 		TMP_SHARED_NAME="$(basename $DM_SHARED_PATH)"
 		TMP_SHARED_PATH=$DM_SHARED_PATH
 		TMP_SHARED_MNT_PATH=$DM_SHARED_PATH
 	fi
 	printf "%s" "Creation of sharedfolder $DM_NAME with the current host folder..."
-	$VBOX_MANAGE sharedfolder add $DM_NAME --name $TMP_SHARED_NAME --hostpath $TMP_SHARED_PATH --automount > /dev/null 2>&1
-	$VBOX_MANAGE setextradata $DM_NAME VBoxInternal2/SharedFoldersEnableSymlinksCreate/$TMP_SHARED_NAME 1
+	eval "$VBOX_MANAGE sharedfolder add $DM_NAME --name $TMP_SHARED_NAME --hostpath \"$TMP_SHARED_PATH\" --automount > /dev/null 2>&1"
+	eval "$VBOX_MANAGE setextradata $DM_NAME VBoxInternal2/SharedFoldersEnableSymlinksCreate/$TMP_SHARED_NAME 1"
 	printf "%s\n%s" "Done" "Mount the sharedfolder..."
 	$DM_PATH start $DM_NAME > /dev/null 2>&1
 	$DM_PATH ssh $DM_NAME mkdir -p $TMP_SHARED_MNT_PATH > /dev/null 2>&1
@@ -84,7 +91,11 @@ shared_dm_ve () {
 start_dc () {
 
 	if [ "X$DC_FILE" != "X" ] && [ -f $DC_FILE  ]; then
-		eval $($DM_PATH env $DM_NAME )
+		eval $($DM_PATH env $DM_NAME | grep -v '#')
+		# export DOCKER_TLS_VERIFY="1"
+		# export DOCKER_HOST="tcp://$($DM_PATH ip ${DM_NAME}):2376"
+		# export DOCKER_CERT_PATH="'$USERPROFILE\.docker\machine\machines\dev'"
+		# export DOCKER_MACHINE_NAME=$DM_NAME
 		printf "%s" "Execution of docker compose file $DC_FILE..."
 		$DC_PATH -f $DC_FILE up --force-recreate -d > /dev/null 2>&1
 		printf "%s\n" "Done"
@@ -92,8 +103,8 @@ start_dc () {
 }
 
 set_hosts() {
-    if [ ! -n "$(grep $DM_HOSTNAME $HOST_FILE)" ]; then
-		sudo -- sh -c -e "echo '$($DM_PATH ip ${DM_NAME})\t$DM_HOSTNAME' >> $HOST_FILE";
+  if [ ! -n "$(grep $DM_HOSTNAME $HOST_FILE)" ]; then
+		$SUDO "echo -e '$($DM_PATH ip ${DM_NAME})\t$DM_HOSTNAME' >> $HOST_FILE";
 	fi
 	if [ -n "$(grep $DM_HOSTNAME $HOST_FILE)" ]; then
 		printf "%s\n" "The IP address is $($DM_PATH ip ${DM_NAME}). It is  accessible with hostname $DM_HOSTNAME";
@@ -118,32 +129,32 @@ while getopts ":e:n:s:c:dh" opt; do
 		DM_SHARED_PATH="$OPTARG"
 #		shift
 		;;
-		host)                                                       
-	    DM_HOSTNAME="$OPTARG"                                                 
-#	    shift                                                                       
+		host)
+	    DM_HOSTNAME="$OPTARG"
+#	    shift
 	    ;;
-		c)                                                       
-	    DC_FILE="$OPTARG"                                                 
-#	    shift                                                                       
+		c)
+	    DC_FILE="$OPTARG"
+#	    shift
 	    ;;
 		d)
 		$DM_PATH rm -f $DM_NAME
 		exit 0
-#	    shift # past argument=value                                                 
+#	    shift # past argument=value
 	    ;;
-		h)                                                                
+		h)
 		usage
-#	    shift # past argument=value                                                 
+#	    shift # past argument=value
 	    ;;
-		ls)                                                                  
+		ls)
 	    $DM_PATH ls
 		exit 0
-#	    shift # past argument=value                                                 
+#	    shift # past argument=value
 	    ;;
 		ssh)
 	    $DM_PATH ssh $DM_NAME
 		exit 0
-#	    shift # past argument=value                                                 
+#	    shift # past argument=value
 	    ;;
 		\?)
 		echo "Invalid option: -$OPTARG" >&2
@@ -154,10 +165,10 @@ while getopts ":e:n:s:c:dh" opt; do
 		exit 1
 		;;
 	    *)
-	    DM_SHARED_PATH=$PWD                                                             
-	    DM_NAME="dev"                                                                   
+	    DM_SHARED_PATH=$PWD
+	    DM_NAME="dev"
 	    DM_HOSTNAME="$(basename $DM_SHARED_PATH).$DM_NAME"
-	    DC_FILE="$PWD/docker-compose.yml"                                               
+	    DC_FILE="$PWD/docker-compose.yml"
 	            # unknown option
 	    ;;
 	esac
