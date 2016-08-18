@@ -3,7 +3,7 @@ services:
     src:
         image: busybox
         volumes:
-            - $PWD/src:/opt/app
+            - /opt/blog/src:/opt/app
             - /opt/app
     dev:
         image: python
@@ -12,8 +12,8 @@ services:
             - DEBUG=True
         volumes_from:
             - src
-        command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt'
-        #command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt && sed -i "s/^#\!.*/#\!venv\/bin\/python/" venv/bin/*'
+        # command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt'
+        command: /bin/bash -c 'python -m venv --copies --clear venv && venv/bin/pip install --no-cache-dir -r dev.txt && sed -i "s/^#\!.*/#\!venv\/bin\/python/" venv/bin/*'
 
     data:
         image: postgres:latest

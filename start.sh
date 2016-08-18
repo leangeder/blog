@@ -10,15 +10,23 @@ DM_VE="virtualbox"
 DM_SHARED_PATH=$PWD
 DM_NAME="dev"
 DM_HOSTNAME="$(basename $DM_SHARED_PATH).$DM_NAME"
+TMP_SHARED_MNT_PATH="/opt/$(basename $PWD)"
+TMP_SHARED_NAME="hosthome"
+TMP_SHARED_PATH=$HOME
 DC_FILE="$PWD/docker-compose.yml"
 SUDO="sudo -- sh -c -e"
+VBOX_MANAGE=$(which VBoxManage 2> /dev/null)
 
 if [ "X$OS" != "X" ]; then
 	DM_SHARED_PATH="$(cygpath -aw $(pwd))"
 	DC_FILE="$DM_SHARED_PATH\\docker-compose.yml"
+	# VBOX_MANAGE="$(cygpath -aw /cygdrive/c/Program\ Files/Oracle/VirtualBox/VBoxManage.exe)"
 	VBOX_MANAGE="/cygdrive/c/Program\ Files/Oracle/VirtualBox/VBoxManage.exe"
 	HOST_FILE="/cygdrive/c/Windows/System32/drivers/etc/hosts"
 	SUDO="sh -c -e"
+	TMP_SHARED_NAME="c/Users"
+	TMP_SHARED_PATH="c:\Users"
+	# TMP_SHARED_MNT_PATH="$HOME"
 fi
 
 get_dm_tools () {
@@ -62,22 +70,10 @@ start_dm_ve () {
 }
 
 shared_dm_ve () {
-	TMP_SHARED_NAME="hosthome"
-	TMP_SHARED_PATH=$HOME
-	TMP_SHARED_MNT_PATH=$TMP_SHARED_PATH
-	VBOX_MANAGE=$(which VBoxManage 2> /dev/null)
-	if [ "X$OS" != "X" ]; then
-    TMP_SHARED_NAME="c/Users"
-	  TMP_SHARED_PATH="c:\Users"
-		TMP_SHARED_MNT_PATH="$HOME"
-	fi
 	$DM_PATH stop $DM_NAME > /dev/null 2>&1
 	eval "$VBOX_MANAGE sharedfolder remove $DM_NAME --name $TMP_SHARED_NAME > /dev/null 2>&1"
-	if [ "X$DM_SHARED_PATH" != "X"  ]; then
-		TMP_SHARED_NAME="$(basename $DM_SHARED_PATH)"
-		TMP_SHARED_PATH=$DM_SHARED_PATH
-		TMP_SHARED_MNT_PATH=$DM_SHARED_PATH
-	fi
+	TMP_SHARED_NAME="$(basename $DM_SHARED_PATH)"
+	TMP_SHARED_PATH=$DM_SHARED_PATH
 	printf "%s" "Creation of sharedfolder $DM_NAME with the current host folder..."
 	eval "$VBOX_MANAGE sharedfolder add $DM_NAME --name $TMP_SHARED_NAME --hostpath \"$TMP_SHARED_PATH\" --automount > /dev/null 2>&1"
 	eval "$VBOX_MANAGE setextradata $DM_NAME VBoxInternal2/SharedFoldersEnableSymlinksCreate/$TMP_SHARED_NAME 1"
@@ -91,7 +87,7 @@ shared_dm_ve () {
 start_dc () {
 
 	if [ "X$DC_FILE" != "X" ] && [ -f $DC_FILE  ]; then
-		eval $($DM_PATH env $DM_NAME | grep -v '#')
+		eval $($DM_PATH env $DM_NAME)
 		# export DOCKER_TLS_VERIFY="1"
 		# export DOCKER_HOST="tcp://$($DM_PATH ip ${DM_NAME}):2376"
 		# export DOCKER_CERT_PATH="'$USERPROFILE\.docker\machine\machines\dev'"
