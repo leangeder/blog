@@ -64,17 +64,20 @@ gulp.task('server', ['build'], function() {
     browserSync.init({
         server: {
           baseDir: "./",
+          index: "index.html",
           routes: {
             "/": "./templates",
-            "/css": "../static/css",
-            "/js": "../static/js",
-            "/img": "../static/img"
+            "/css": "./static/css",
+            "/js": "./static/js",
+            "/img": "./static/img"
           }
         }
     });
 
-    gulp.watch('./scss/app.scss', ['build']);
-    gulp.watch('templates/*.html').on('change', browserSync.reload);
+    // gulp.watch('./scss/**/*.scss', ['build']).on('change', browserSync.reload);
+    // gulp.watch('./templates/**/*.html').on('change', browserSync.reload);
+    gulp.watch('./scss/app.scss', ['build']).on('change', browserSync.reload);
+    gulp.watch('./templates/*.html').on('change', browserSync.reload);
 });
 
 

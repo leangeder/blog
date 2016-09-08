@@ -1,14 +1,30 @@
 @charset "UTF-8";
 
-// @import "settings";
-// @import "foundation";
-//
+@import "settings";
+@import "foundation";
+
 // @include foundation-global-styles;
-//
-// .container {
-//   @include grid-row;
-// }
-//
-// .main, .sidebar {
-//   @include grid-column;
-// }
+@include foundation-flex-classes;
+@include foundation-flex-grid;
+
+.container {
+  @include flex-grid-row;
+}
+
+.sidebar, .middle{
+  @include flex-grid-column;
+  background-color: rgb(52, 151, 187)
+}
+
+.main, .bottom{
+  @include flex-grid-row(2);
+  background-color: rgb(52, 151, 187)
+}
+
+.sidebar .profile .thumbnail{
+  @include thumbnail;
+}
+
+.sidebar .profile .label{
+  @include label;
+}
