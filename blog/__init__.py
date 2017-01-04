@@ -1,10 +1,13 @@
 from flask import (Flask, render_template,
                    redirect, url_for, session, request, flash)
 from functools import wraps
-
+from flask.ext.sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
 # app.config.from_pyfile('conf/test.cfg')
+
+db = SQLAlchemy(app)
 
 
 def login_required(fn):
@@ -39,18 +42,3 @@ def show(page):
     return render_template('%s.html' % page)
     # except TemplateNotFound:
         # abort(404)
-
-
-def main():
-    use_debugger = app.config.from_envvar('DEBUG')
-    if use_debugger:
-        app.logger.debug('Debug Mode Activate')
-    try:
-        app.run(use_debugger=use_debugger, debug=app.debug,
-        use_reloader=use_debugger)
-    except Exception as error:
-        app.logger.debug(error)
-
-
-if __name__ == '__main__':
-    main()
